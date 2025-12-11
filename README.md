@@ -1,48 +1,66 @@
-# Router DNS Setter (HiLink-compatible)
+# Router DHCP/DNS Auto-Fixer (HiLink)
 
-A minimalist helper script that reproduces the exact XML request used by certain HiLink-based router web interfaces to set DNS values.  
-Some models expose a DNS configuration screen that *appears* functional but silently refuses to save any changes.  
-While setting up a home DNS resolver on a Raspberry Pi, this behavior made configuration impossible through the UI.  
-After inspecting the browser traffic, it became clear that the backend API fully accepted the request — the UI simply wasn’t submitting it correctly.
+Some Huawei HiLink routers (notably the B525s-23a) have a charming habit:  
+they pretend to save your DNS settings and then quietly wipe everything on the next reboot.
 
-This tool provides a clean and reliable way to trigger the same request manually, without modifying firmware or using unsupported methods.
+While setting up a Pi-hole resolver at home, this behavior made the UI completely unusable.  
+After looking at the browser traffic, it turned out the backend API *does* accept proper DNS and DHCP configuration — the WebUI simply never sends the correct request.
 
----
+This project fills that gap.
 
-## What this project **does**
-
-- Extracts the CSRF token from the existing router UI  
-- Builds the same XML payload the UI is supposed to send  
-- Sends the request with the same headers the UI uses  
-- Applies DNS changes immediately when authenticated  
-
-The script interacts only with documented/visible API endpoints.  
-There is no exploit or bypass involved.
+It logs in, sends the correct XML payload, and keeps re-applying it in case the router resets it again.
 
 ---
 
-## What this project **does *not*** do
+## What this project does
 
-- X No authentication bypass  
-- X No CSRF bypass  
-- X No firmware patching or unlocking  
-- X No hidden API usage  
-- X No reverse-engineering of protected components  
+- Retrieves a valid CSRF token from the router’s WebUI  
+- Authenticates using the official HiLink login flow  
+- Builds the same XML DHCP/DNS payload the WebUI is supposed to send  
+- Submits the configuration using the router’s documented endpoints  
+- Optionally runs as a systemd service to auto-repair DNS after every reboot  
 
-It simply exposes a working request that the UI itself already relies on.
+This is **not** a hack or exploit.  
+It is simply automating a request the router already expects.
+
+---
+
+## What this project does *not* do
+
+- No authentication bypass  
+- No CSRF bypass  
+- No firmware patching  
+- No unlocking or privilege escalation  
+- No hidden or private API usage  
+- No reverse-engineering of protected components  
+
+It only calls endpoints that are already visible in any standard HiLink installation.
 
 ---
 
 ## Why this exists
 
-During a home-lab setup, the router’s built-in DNS page refused to accept custom DNS values — even though the backend endpoint itself worked perfectly.  
-Capturing the traffic and sending the same request manually solved the problem instantly.
+Certain HiLink firmware builds display a DNS configuration screen that looks perfectly functional,  
+yet ignore or discard the values silently.  
+Others hide the DNS fields entirely.
 
-This repository documents that behavior so others in similar situations can fix their setups without guesswork.
+Meanwhile, the backend API accepts well-formed XML with no objection.
+
+By reproducing the request manually — and later automating it — the router finally behaves as expected.
+
+If your DNS keeps resetting itself, this tool saves you from reconfiguring it by hand every time the router reboots.
 
 ---
 
-## Disclaimer
+## Legal and safety notes
 
-Use this only on hardware you own and have authorized access to.  
-The author is not responsible for misconfiguration or improper use.
+Use this only on hardware you own and have permission to configure.  
+This tool does not exploit, unlock, or tamper with the device — it only automates supported API calls.  
+Incorrect DHCP settings can disrupt your network, so review all values before applying them.
+
+---
+
+## Summary
+
+If your HiLink router loves to “forget” its DNS settings, this tool politely reminds it — repeatedly.  
+No rooting, no flashing, no drama.
